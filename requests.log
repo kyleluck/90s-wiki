@@ -73,3 +73,7 @@ GET /HomePage
 GET /HomePage/
 
 GET /HomePage/edit
+GET /
+
+GET /HomePage
+

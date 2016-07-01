@@ -4,6 +4,9 @@ var fs = require('fs');
 var wikiLinkify = require('wiki-linkify'); //module to autolink CamelCased words
 var marked = require('marked'); //module to parse markdown format
 var session = require('express-session');
+var mongoose = require('mongoose');
+
+mongoose.connect('mongodb://localhost/wiki'); //connect to mongoose db on localhost (wiki db)
 
 var app = express();
 
@@ -13,6 +16,12 @@ app.use(session({ secret: '90s&wiki$secret', cookie: {
   maxAge: 1000000
 }})); //use express session for user authentication
 app.use(bodyParser.urlencoded({ extended: false })); //use body parser for requests
+
+// mongoDB model for wiki entries
+var WikiEntry = mongoose.model('WikiEntry', {
+  title: { type: String, required: true },
+  content: { type: String, required: true }
+});
 
 // log all requests
 app.use(function(request, response, next) {
