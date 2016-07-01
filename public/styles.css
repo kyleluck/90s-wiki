@@ -1,0 +1,14 @@
+* {
+  box-sizing: border-box;
+}
+#frame {
+  max-width: 1000px;
+  margin: auto;
+}
+a {
+  padding: 10px;
+}
+.projects img {
+  width: 100%;
+  margin: 5px;
+}
