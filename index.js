@@ -18,12 +18,13 @@ app.use(session({ secret: '90s&wiki$secret', cookie: {
 app.use(bodyParser.urlencoded({ extended: false })); //use body parser for requests
 
 // mongoDB model for wiki entries
-var WikiEntry = mongoose.model('WikiEntry', {
-  title: { type: String, required: true },
+var Page = mongoose.model('Page', {
+  _id: { type: String, required: true },
   content: { type: String, required: true }
 });
 
 // log all requests
+/* COMMENTING OUT ... Just an exercise
 app.use(function(request, response, next) {
   var logItem = request.method + ' ' + request.url + '\n\n';
   fs.appendFile('requests.log', logItem, function(err) {
@@ -34,28 +35,23 @@ app.use(function(request, response, next) {
   console.log(request.method + ' ' + request.url);
   next();
 });
+*/
 
 app.get('/', function(req, res) {
   res.redirect('/HomePage');
 });
 
-//display all pages created at /AllPages
+//display all Pages created at /AllPages
 app.get('/AllPages', function(req, res) {
-  fs.readdir('pages', function(err, files) {
+  //get a list of Pages from the database
+  Page.find(function(err, response) {
     if (err) {
-      return console.log('Error reading pages directory: ', err);
+      return console.error(err);
     }
-
-    //change files to remove extension and create link
-    files = files.map(function(file) {
-      var fileName = file.slice(0, -3);
-      return '<a href="/' + fileName + '">' + fileName + '</a>';
-    });
-
     res.render('allpages', {
       title: 'AllPages',
       pageName: 'AllPages',
-      files: files
+      files: response
     });
   });
 });
@@ -75,36 +71,29 @@ app.get('/:pageName', function(req, res) {
     return;
   }
 
-  //check to see if file exists
-  fs.access(pageFileLocation, function(err) {
-    //if file doesn't exist, render placeholder page
+  //check to see if this page already exists in the db
+  Page.findOne({ _id: pageName }, function(err, page) {
     if (err) {
+      return console.error(err);
+    }
+    if (!page) {
+      //page doesn't exist, render placeholder
       res.render('placeholder', {
         title: pageName,
         pageName: pageName,
       });
-      return;
-    }
-
-    //if file exists, read file contents and render page
-    fs.readFile(pageFileLocation, function(err, data) {
-      if (err) {
-        return console.log('There was an error reading the file: ', err);
-      }
-
-      pageContent = data.toString();
+    } else {
+      /* page exists, render it */
       //convert markdown to html
-      pageContent = marked(pageContent);
+      var pageContent = marked(page.content);
       //wikiLinkify any CamelCased words
       var wikiContent = wikiLinkify(pageContent);
-
       res.render('page', {
         title: pageName,
         pageName: pageName,
-        content: wikiContent
+        content: pageContent
       });
-    });
-
+    }
   });
 });
 
@@ -113,11 +102,15 @@ app.get('/:pageName/edit', authRequired, function(req, res) {
   var pageFileLocation = 'pages/' + pageName + '.md';
   var currentContent;
 
-  fs.readFile(pageFileLocation, function(err, data) {
+  //if the page has content, show it in the edit textarea
+  Page.findOne({ _id: pageName }, function(err, page) {
     if (err) {
+      return console.error(err);
+    }
+    if (!page) {
       currentContent = '';
     } else {
-      currentContent = data.toString();
+      currentContent = page.content;
     }
     res.render('edit', {
       title: 'Edit ' + pageName,
@@ -125,7 +118,6 @@ app.get('/:pageName/edit', authRequired, function(req, res) {
       currentContent: currentContent
     });
   });
-
 });
 
 app.post('/:pageName/save', authRequired, function(req, res) {
@@ -133,14 +125,18 @@ app.post('/:pageName/save', authRequired, function(req, res) {
   var thisPage = req.params.pageName;
   var pageLocation = 'pages/' + thisPage + '.md';
 
-  fs.writeFile(pageLocation, pageContent, function(err) {
-    if (err) {
-      return console.log('There was an error: ', err);
+  //save or update this page in the database
+  Page.findOneAndUpdate(
+    { _id: thisPage },
+    { $set: { content: pageContent }},
+    { upsert: true },
+    function(err, response) {
+      if (err) {
+        return console.error(err);
+      }
+      res.redirect('/' + thisPage);
     }
-    console.log(pageLocation + " written successfully");
-  });
-
-  res.redirect('/' + thisPage);
+  );
 });
 
 //handle login request
