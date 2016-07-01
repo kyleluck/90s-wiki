@@ -16,16 +16,22 @@ app.use(session({ secret: '90s&wiki$secret', cookie: {
 }})); //use express session for user authentication
 app.use(bodyParser.urlencoded({ extended: false })); //use body parser for requests
 
-// mongoDB model for wiki entries
+// mongo model for wiki entries
 var Page = mongoose.model('Page', {
   _id: { type: String, required: true },
   content: { type: String, required: true }
 });
 
-// mongoDB model for logging
+// mongo model for logging
 var Log = mongoose.model('Log', {
   log: String,
   timestamp: Date
+});
+
+// mongo model for user
+var User = mongoose.model('User', {
+  username: { type: String, required: true },
+  password: { type: String, required: true }
 });
 
 // log all requests
@@ -155,14 +161,23 @@ app.post('/login-submit', function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
 
-  //hard code because this is just an exercise:
-  if ((username === 'kyle' && password === 'thepassword') || username === 'admin' && password === 'letmein') {
-    //user authenticated
-    req.session.user = username; //assign username to session object
-    res.redirect(req.session.requestUrl);
-  } else {
-    res.redirect('/login');
-  }
+  //check username & password against database
+  /* ok, we know not to store passwords unencryped in databases and
+    that findOne wouldn't work if there were multiple users with the
+    same username */
+  User.findOne({ username: username }, function(err, user) {
+    if (err) {
+      console.error(err);
+    }
+    if (user.username === username && user.password === password) {
+      //user authenticated
+      req.session.user = username; //assign username to session object
+      res.redirect(req.session.requestUrl);
+    } else {
+      //user NOT authenticated
+      res.redirect('/login');
+    }
+  });
 });
 
 //function to see if user is logged in
