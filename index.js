@@ -91,7 +91,7 @@ app.get('/:pageName', function(req, res) {
       res.render('page', {
         title: pageName,
         pageName: pageName,
-        content: pageContent
+        content: wikiContent
       });
     }
   });
