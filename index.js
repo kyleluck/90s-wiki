@@ -78,6 +78,11 @@ app.get('/login', function(req, res) {
   res.render('login');
 });
 
+//display signup pageName
+app.get('/signup', function(req, res) {
+  res.render('signup');
+});
+
 app.get('/:pageName', function(req, res) {
   var pageName = req.params.pageName,
       pageContent,
@@ -179,6 +184,22 @@ app.post('/login-submit', function(req, res) {
     }
   });
 });
+
+//handle signup requests
+app.post('/signup-submit', function(req, res) {
+  var username = req.body.username;
+  var password = req.body.password;
+
+  User.create({ username: username, password: password }, function(err, response) {
+    if (err) {
+      return console.error(err);
+    }
+    req.session.user = username; //assign username to session object
+    res.redirect(req.session.requestUrl);
+  });
+
+});
+
 
 //function to see if user is logged in
 function authRequired(req, res, next) {
