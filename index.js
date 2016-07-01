@@ -1,6 +1,5 @@
 var express = require('express');
 var bodyParser = require('body-parser');
-var fs = require('fs');
 var wikiLinkify = require('wiki-linkify'); //module to autolink CamelCased words
 var marked = require('marked'); //module to parse markdown format
 var session = require('express-session');
@@ -23,19 +22,31 @@ var Page = mongoose.model('Page', {
   content: { type: String, required: true }
 });
 
+// mongoDB model for logging
+var Log = mongoose.model('Log', {
+  log: String,
+  timestamp: Date
+});
+
 // log all requests
-/* COMMENTING OUT ... Just an exercise
 app.use(function(request, response, next) {
-  var logItem = request.method + ' ' + request.url + '\n\n';
-  fs.appendFile('requests.log', logItem, function(err) {
+
+  // create the new Log object
+  var logItem = new Log({
+    log: request.method + ' ' + request.url,
+    timestamp: Date.now()
+  });
+
+  // save it to the database
+  logItem.save(function(err, response) {
     if (err) {
-      return console.log('Error writing to log file:', err);
+      return console.error(err);
     }
   });
-  console.log(request.method + ' ' + request.url);
+
   next();
 });
-*/
+
 
 app.get('/', function(req, res) {
   res.redirect('/HomePage');
