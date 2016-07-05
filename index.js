@@ -169,7 +169,7 @@ app.post('/login-submit', function(req, res) {
   //check username & password against database
   /* ok, we know not to store passwords unencryped in databases and
     that findOne wouldn't work if there were multiple users with the
-    same username */
+    same username. we could use username as _id and force unique usernames */
   User.findOne({ username: username }, function(err, user) {
     if (err) {
       console.error(err);
